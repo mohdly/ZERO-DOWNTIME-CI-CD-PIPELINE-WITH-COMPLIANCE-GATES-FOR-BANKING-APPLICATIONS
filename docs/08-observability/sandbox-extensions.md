@@ -1,6 +1,6 @@
 # Sandbox extensions (Innovation Pioneer) — ML pipeline intelligence, compliance drift, chaos, DX metrics
 
-> **AI Attribution:** Drafted with Claude (Anthropic) on 23 Oct 2026 as an AI-accelerated first draft. Reviewed, edited, validated (linters, unit tests, source checks) and approved by **Mohammad Sinan Ali**.
+> **AI Attribution:** AI-assisted (Claude, Anthropic); reviewed and validated by Mohammad Sinan Ali.
 
 Four Sandbox-mode topics from Part B §B3.3 are designed here; **ML Pipeline Intelligence is implemented and unit-tested** (code in `pipeline/scripts/ml/`, tests in `pipeline/scripts/tests/`).
 

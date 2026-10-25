@@ -1,6 +1,6 @@
 # Case Study 3 (Cloudflare) — Config-Change Pipeline for WAF / Security Rules
 
-> **AI Attribution:** Drafted with Claude (Anthropic) on 23 Oct 2026 as an AI-accelerated first draft. Reviewed, edited, validated (linters, unit tests, source checks) and approved by **Mohammad Sinan Ali**.
+> **AI Attribution:** AI-assisted (Claude, Anthropic); reviewed and validated by Mohammad Sinan Ali.
 
 **Fact base (verified):** 2 July 2019, a WAF Managed Rule with a backtracking regex was deployed globally in one step; CPU hit 100% on every core handling HTTP/S; **traffic fell by up to 82%**; outage lasted **27 minutes**; global WAF kill took effect 14:07 UTC, recovery 14:09. (Brief says "~50%" — see ERRATA #2.)
 

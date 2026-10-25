@@ -1,6 +1,6 @@
 # Deliverable 5 — Environment Promotion Workflow
 
-> **AI Attribution:** Drafted with Claude (Anthropic) on 23 Oct 2026 as an AI-accelerated first draft. Reviewed, edited, validated (linters, unit tests, source checks) and approved by **Mohammad Sinan Ali**.
+> **AI Attribution:** AI-assisted (Claude, Anthropic); reviewed and validated by Mohammad Sinan Ali.
 
 Principle: **same artefact, different config.** The signed image digest produced in Stage 4b is the only thing promoted; environments differ only in Helm values, secrets and data.
 

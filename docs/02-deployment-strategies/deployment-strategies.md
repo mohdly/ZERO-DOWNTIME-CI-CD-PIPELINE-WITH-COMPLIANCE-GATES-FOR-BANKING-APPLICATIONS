@@ -1,6 +1,6 @@
 # Deliverable 2 — Blue-Green & Canary Deployment
 
-> **AI Attribution:** Drafted with Claude (Anthropic) on 23 Oct 2026 as an AI-accelerated first draft. Reviewed, edited, validated (linters, unit tests, source checks) and approved by **Mohammad Sinan Ali**.
+> **AI Attribution:** AI-assisted (Claude, Anthropic); reviewed and validated by Mohammad Sinan Ali.
 
 Pipeline stage reference: [Stage 8–9](../01-pipeline-architecture/architecture.md). Rollback triggers: [Deliverable 6](../06-rollback-specification/rollback-specification.md).
 

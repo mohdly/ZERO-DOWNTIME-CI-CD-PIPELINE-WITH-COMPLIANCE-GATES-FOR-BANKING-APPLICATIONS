@@ -1,6 +1,6 @@
 # Case Study 1 — Deployment verification that would have stopped Knight Capital
 
-> **AI Attribution:** Drafted with Claude (Anthropic) on 23 Oct 2026 as an AI-accelerated first draft. Reviewed, edited, validated (linters, unit tests, source checks) and approved by **Mohammad Sinan Ali**.
+> **AI Attribution:** AI-assisted (Claude, Anthropic); reviewed and validated by Mohammad Sinan Ali.
 
 **Failure recap (1 Aug 2012):** 7 of 8 servers got the new code; the 8th kept legacy code whose repurposed flag triggered the old "Power Peg" logic; ~$440M lost in ~45 minutes. No verification, no kill switch.
 

@@ -1,6 +1,6 @@
 # Self-Assessment
 
-> **AI Attribution:** Drafted with Claude (Anthropic) on 23 Oct 2026 from the repository contents. The ratings are an evidence-based proposal; **Mohammad Sinan Ali** reviews and owns the final scores. Anything not executed is stated as such.
+> **AI Attribution:** AI-assisted (Claude, Anthropic); reviewed and validated by Mohammad Sinan Ali.
 
 Rubric (Part F, 1000 points, seven dimensions). The brief does not publish per-dimension weights, so ratings are on a 1–10 scale with evidence you can open.
 

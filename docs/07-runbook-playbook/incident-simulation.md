@@ -1,6 +1,6 @@
 # Level 5 — "The Incident": Friday 5:07 PM IST Simulation
 
-> **AI Attribution:** Drafted with Claude (Anthropic) on 23 Oct 2026 as an AI-accelerated first draft. Reviewed, edited, validated (linters, unit tests, source checks) and approved by **Mohammad Sinan Ali**.
+> **AI Attribution:** AI-assisted (Claude, Anthropic); reviewed and validated by Mohammad Sinan Ali.
 
 **Scenario:** A developer pushed a "critical hotfix" that bypassed staging. Canary has run 8 min (**hotfix profile 1% → 10% → 100%, 5 min per step**, so it is currently inside the 10% step). Alerts fire together: HTTP 500 = 12% (threshold 5%, CRITICAL); PostgreSQL connection-pool exhaustion on primary (HIGH); downstream payment-gateway timeout 35% (CRITICAL).
 

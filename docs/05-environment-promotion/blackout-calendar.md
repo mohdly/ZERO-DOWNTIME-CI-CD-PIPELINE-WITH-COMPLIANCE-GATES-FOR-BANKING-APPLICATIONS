@@ -1,6 +1,6 @@
 # Case Study 4 (SBI YONO) — Deployment Blackout Calendar & Capacity Triggers
 
-> **AI Attribution:** Drafted with Claude (Anthropic) on 23 Oct 2026 as an AI-accelerated first draft. Reviewed, edited, validated (linters, unit tests, source checks) and approved by **Mohammad Sinan Ali**.
+> **AI Attribution:** AI-assisted (Claude, Anthropic); reviewed and validated by Mohammad Sinan Ali.
 
 Enforced by `pipeline/scripts/blackout-check.sh` (reads `pipeline/scripts/blackout-calendar.yaml`) as the first step of every production deploy job.
 

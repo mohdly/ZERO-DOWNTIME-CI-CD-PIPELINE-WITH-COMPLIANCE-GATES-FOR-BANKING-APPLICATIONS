@@ -1,6 +1,6 @@
 # Deliverable 1 — Pipeline Architecture
 
-> **AI Attribution:** Drafted with Claude (Anthropic) on 23 Oct 2026 as an AI-accelerated first draft. Reviewed, edited, validated (linters, unit tests, source checks) and approved by **Mohammad Sinan Ali**.
+> **AI Attribution:** AI-assisted (Claude, Anthropic); reviewed and validated by Mohammad Sinan Ali.
 
 ## 1. Design principles
 1. **Same artefact, different config** — one image (tag `1.14.2+a1b2c3d.20261019T0930Z.run4812` and `sha-a1b2c3d`) is promoted through all four environments. Never `latest`.

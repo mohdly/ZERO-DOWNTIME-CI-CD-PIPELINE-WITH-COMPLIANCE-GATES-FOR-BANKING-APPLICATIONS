@@ -1,6 +1,6 @@
 # Deliverable 8 — Observability, DORA & Dashboards
 
-> **AI Attribution:** Drafted with Claude (Anthropic) on 23 Oct 2026 as an AI-accelerated first draft. Reviewed, edited, validated (linters, unit tests, source checks) and approved by **Mohammad Sinan Ali**.
+> **AI Attribution:** AI-assisted (Claude, Anthropic); reviewed and validated by Mohammad Sinan Ali.
 
 Stack (brief §B2.1): Prometheus + Alertmanager + Grafana, OpenTelemetry → Jaeger/Tempo, Loki, Sloth/Pyrra for SLOs.
 
