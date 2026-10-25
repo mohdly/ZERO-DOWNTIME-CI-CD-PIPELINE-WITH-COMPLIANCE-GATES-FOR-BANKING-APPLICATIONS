@@ -1,0 +1,20 @@
+{{- if .Values.hpa.enabled }}
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata: { name: payments-api }
+spec:
+  scaleTargetRef: { apiVersion: argoproj.io/v1alpha1, kind: Rollout, name: payments-api }
+  minReplicas: {{ .Values.hpa.minReplicas }}
+  maxReplicas: {{ .Values.hpa.maxReplicas }}
+  metrics:
+    - type: Resource
+      resource: { name: cpu, target: { type: Utilization, averageUtilization: {{ .Values.hpa.cpuTarget }} } }
+  behavior: { scaleDown: { stabilizationWindowSeconds: 600 } }
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata: { name: payments-api }
+spec:
+  minAvailable: {{ .Values.pdb.minAvailable }}
+  selector: { matchLabels: { app: payments-api } }
+{{- end }}

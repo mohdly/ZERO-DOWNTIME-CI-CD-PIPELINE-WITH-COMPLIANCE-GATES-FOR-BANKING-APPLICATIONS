@@ -1,0 +1,17 @@
+digraph ec {
+  rankdir=TB; fontname="Helvetica"; nodesep=0.45; ranksep=0.6; newrank=true; pad=0.3;
+  label="Zero-downtime migration — each phase is its own deployment; only CONTRACT is forward-only"; labelloc=t; fontsize=18;
+  node [shape=box, style="rounded,filled", fontname="Helvetica", fontsize=11, fillcolor="#E8F1FB", color="#2F6DB5"];
+  edge [fontname="Helvetica", fontsize=10];
+  s0 [label="S0 original\nemail", fillcolor="#EEEEEE"];
+  e [label="EXPAND  V2.0\nADD encrypted_email (nullable)\nCREATE INDEX CONCURRENTLY\nlock_timeout 3 s · DBA gate\nrollback: DROP COLUMN"];
+  a [label="Deploy app N\ndual-write email + encrypted_email\nread email (fallback)\nrollback: redeploy N-1", fillcolor="#E6F4E4", color="#3C8D40"];
+  m [label="MIGRATE  V2.1\nexternal batch job · keyset paging\n5-10k rows · adaptive throttle\nabort: latency +20% · lag >30 s\nrollback: stop (idempotent)", fillcolor="#FFF0D6", color="#C77700"];
+  v [label="VERIFY\ncount + checksum = 0 diff\nshadow-read mismatch 0 for 24 h", shape=diamond, fillcolor="#FFE2A8", color="#C77700"];
+  b [label="Deploy app N+1\nencrypted-only reads (flag)\nrollback: flip flag", fillcolor="#E6F4E4", color="#3C8D40"];
+  c [label="CONTRACT  V2.2\nDROP COLUMN email\nCAB + DBA · zero reads ≥1 release\nFORWARD-ONLY (PITR + snapshot)", fillcolor="#FDE7E7", color="#C62828"];
+  s0 -> e -> a -> m -> v -> b -> c;
+  v -> m [style=dashed,label="mismatch → re-run"];
+  {rank=same; s0; e; a; m}
+  {rank=same; v; b; c}
+}

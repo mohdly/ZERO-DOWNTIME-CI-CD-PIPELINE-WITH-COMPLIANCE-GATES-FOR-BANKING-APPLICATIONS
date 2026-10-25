@@ -1,0 +1,15 @@
+# Base config shared by all environments
+image: { repository: registry.novapay.internal/novapay/payments-api, digest: "", pullPolicy: IfNotPresent }
+replicaCount: 3
+resources: { requests: { cpu: 500m, memory: 768Mi }, limits: { cpu: "1", memory: 1Gi } }
+securityContext: { runAsNonRoot: true, runAsUser: 10001, allowPrivilegeEscalation: false, readOnlyRootFilesystem: true, privileged: false }
+terminationGracePeriodSeconds: 330
+hpa: { enabled: true, minReplicas: 3, maxReplicas: 20, cpuTarget: 70, queueDepthTarget: 1000, p99TargetMs: 300 }
+pdb: { minAvailable: 80% }
+canary:
+  profile: standard
+  steps: [ { weight: 2, pause: 10m }, { weight: 10, pause: 10m }, { weight: 50, pause: 15m } ]
+  minSamples: 5000
+featureFlags: { newEncryptedEmailRead: false }
+secrets: { vaultPath: secret/data/novapay/dev/payments-api }
+istio: { host: payments.dev.novapay.example, gateway: novapay-gateway }

@@ -1,0 +1,4 @@
+replicaCount: 3
+istio: { host: payments.staging.novapay.example }
+secrets: { vaultPath: secret/data/novapay/staging/payments-api }
+featureFlags: { newEncryptedEmailRead: true }

@@ -1,0 +1,23 @@
+digraph canary {
+  rankdir=TB; fontname="Helvetica"; nodesep=0.45; ranksep=0.55; newrank=true; pad=0.3;
+  label="Canary progression with statistical analysis (standard profile ≈ 35 min; high-risk profile in brackets)"; labelloc=t; fontsize=18;
+  node [shape=box, style="rounded,filled", fontname="Helvetica", fontsize=11, fillcolor="#FFF0D6", color="#C77700"];
+  edge [fontname="Helvetica", fontsize=10];
+  p0 [label="Dual-approved digest\n+ fleet inventory (Knight guard)", fillcolor="#E8F1FB", color="#2F6DB5"];
+  p1 [label="Phase 1  2%  · 10 min\n[1-2% · 15 min]\nerr <0.1% · p99 <200 ms"];
+  a1 [label="Analysis\nWelch t (latency)\nχ² (errors) · ≥5,000 req\ncomposite ≥90", shape=diamond, fillcolor="#FFE2A8"];
+  p2 [label="Phase 2  10% · 10 min\n[5-10% · 30 min]\nerr <0.05% · 0 critical alerts"];
+  a2 [label="Analysis", shape=diamond, fillcolor="#FFE2A8"];
+  p3 [label="Phase 3  50% · 15 min\n[25-50% · 60 min]\nall SLOs · no degradation"];
+  a3 [label="Analysis", shape=diamond, fillcolor="#FFE2A8"];
+  p4 [label="Phase 4  100%\n24 h bake (high-risk)\nauto-rollback stays armed", fillcolor="#D7F0D3", color="#3C8D40"];
+  rb [label="ROLLBACK\nweight→0 · Rollout abort\n< 60 s · incident + audit", fillcolor="#FDE7E7", color="#C62828", style="rounded,filled,dashed"];
+  ex [label="EXTEND (max 2×)\nthin data / borderline 70-89", fillcolor="#FFFBD6", color="#999900"];
+  p0 -> p1 -> a1 -> p2 -> a2 -> p3 -> a3 -> p4;
+  a1 -> rb [style=dashed,color="#C62828",label="<70"]; a2 -> rb [style=dashed,color="#C62828"]; a3 -> rb [style=dashed,color="#C62828"];
+  a1 -> ex [style=dashed]; ex -> a1 [style=dashed];
+  {rank=same; p0; p1; a1; p2}
+  {rank=same; a2; p3; a3; p4}
+  {rank=same; rb; ex}
+  p2 -> a2 [constraint=true];
+}

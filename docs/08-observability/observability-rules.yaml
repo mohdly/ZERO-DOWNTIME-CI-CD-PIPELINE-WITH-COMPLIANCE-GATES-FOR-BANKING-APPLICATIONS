@@ -1,0 +1,53 @@
+# Recording + alerting rules for Deliverable 8.  Validate: promtool check rules observability-rules.yaml ; promtool test rules observability-rules.test.yaml
+groups:
+  - name: novapay-recording
+    interval: 15s
+    rules:
+      - record: novapay:error_ratio:rate5m
+        expr: sum(rate(istio_requests_total{destination_service_name="payments-api",response_code=~"5.."}[5m])) / sum(rate(istio_requests_total{destination_service_name="payments-api"}[5m]))
+      - record: novapay:error_ratio:rate1h
+        expr: sum(rate(istio_requests_total{destination_service_name="payments-api",response_code=~"5.."}[1h])) / sum(rate(istio_requests_total{destination_service_name="payments-api"}[1h]))
+      - record: novapay:error_ratio:rate30d
+        expr: sum(rate(istio_requests_total{destination_service_name="payments-api",response_code=~"5.."}[30d])) / sum(rate(istio_requests_total{destination_service_name="payments-api"}[30d]))
+      - record: novapay:availability:ratio_30d
+        expr: 1 - novapay:error_ratio:rate30d
+      - record: novapay:txn_success_ratio:rate5m
+        expr: sum(rate(payments_txn_total{outcome="success"}[5m])) / sum(rate(payments_txn_total[5m]))
+  - name: novapay-upi-detection
+    interval: 15s
+    rules:
+      # Case Study 2 (YES Bank): scrape 15 s + evaluation 15 s  =>  detected <= 30 s after the failure begins
+      - alert: UPITechnicalDeclineRateHigh
+        expr: sum(rate(upi_txn_total{outcome="technical_decline"}[30s])) / sum(rate(upi_txn_total[30s])) > 0.02
+        for: 0s
+        labels: { severity: critical, regulatory: "true", sev: SEV-1 }
+        annotations: { summary: "UPI technical-decline rate above 2%", action: "Page SRE; status page 'Investigating UPI failures'; start RBI/CERT-In incident clock" }
+      - alert: UPISyntheticProbeFailing
+        expr: sum(probe_success{job="upi-synthetic"} == bool 0) >= 2
+        for: 15s
+        labels: { severity: critical, regulatory: "true", sev: SEV-1 }
+        annotations: { summary: "2+ synthetic UPI collect/pay probes failing" }
+  - name: novapay-regulatory-timer
+    interval: 30s
+    rules:
+      - alert: CustomerImpactingIncidentOver30m
+        expr: (time() - novapay_incident_started_timestamp_seconds{customer_impact="true"}) > 1800 and novapay_incident_resolved == 0
+        labels: { severity: critical, regulatory: "true" }
+        annotations: { summary: "Customer-impacting incident open >30 min — open Compliance task with prefilled RBI/NPCI/CERT-In template" }
+  - name: novapay-pipeline-health
+    interval: 1m
+    rules:
+      - alert: AuditHashChainBroken
+        expr: min(novapay_audit_chain_valid) == 0
+        labels: { severity: critical, regulatory: "true" }
+        annotations: { summary: "Audit-log hash chain verification failed (RBI 6.1 / PCI 10.2)" }
+      - alert: ExceptionExpiredButOpen
+        expr: count(novapay_exception_expired_open == 1) > 0
+        for: 5m
+        labels: { severity: warning }
+        annotations: { summary: "Expired gate exception still referenced — gate must re-block" }
+      - alert: CommitToProdSLOBreach
+        expr: histogram_quantile(0.5, sum by (le)(rate(novapay_pipeline_commit_to_prod_seconds_bucket[1d]))) > 7200
+        for: 1h
+        labels: { severity: warning }
+        annotations: { summary: "Median commit→production above the 2 h SLO" }

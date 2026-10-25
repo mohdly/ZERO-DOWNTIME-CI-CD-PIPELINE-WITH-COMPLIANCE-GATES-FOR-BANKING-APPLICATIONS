@@ -1,0 +1,6 @@
+apiVersion: v2
+name: novapay
+description: NovaPay payments microservice chart (canary via Argo Rollouts + Istio)
+type: application
+version: 1.0.0
+appVersion: "1.14.2"

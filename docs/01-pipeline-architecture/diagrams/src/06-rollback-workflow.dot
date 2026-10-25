@@ -1,0 +1,16 @@
+digraph rb {
+  rankdir=TB; fontname="Helvetica"; nodesep=0.4; ranksep=0.55; newrank=true; pad=0.3;
+  label="Automated rollback — 8 steps, < 2 min execution; path independent of CI/registry/ArgoCD (Cloudflare lesson)"; labelloc=t; fontsize=18;
+  node [shape=box, style="rounded,filled", fontname="Helvetica", fontsize=11, fillcolor="#E8F1FB", color="#2F6DB5"];
+  edge [fontname="Helvetica", fontsize=10];
+  A [label="Cat A  < 60 s\n5xx>5% · probes · OOM\nCrashLoop · DB pool · gateway", fillcolor="#FDE7E7", color="#C62828"];
+  B [label="Cat B  < 15 min\np99>2× · burn>10× · txn -2pp\nCPU/mem saturation", fillcolor="#FFF0D6", color="#C77700"];
+  C [label="Cat C  manual\nslow burn · tickets · retro CVE", fillcolor="#FFFBD6", color="#999900"];
+  s1 [label="1 Detect\n≤45 s"]; s2 [label="2 Correlate\nmatch release_id"]; s3 [label="3 Freeze\npause pipelines"]; s4 [label="4 Rollback\nabort + weight→0"]; s5 [label="5 Verify\nsmoke + synthetic"]; s6 [label="6 Notify\nSlack · status page"]; s7 [label="7 Incident\nSEV per playbook"]; s8 [label="8 Post-mortem\n≤5 days · RBI report"];
+  hum [label="SRE on-call\nack ≤5 min", shape=diamond, fillcolor="#FFE2A8", color="#C77700"];
+  B -> hum; C -> hum [style=dashed]; A -> s1; hum -> s1 [label="no ack @15 min → auto"]; hum -> s4 [label="human decides"];
+  s1 -> s2 -> s3 -> s4 -> s5 -> s6 -> s7 -> s8;
+  {rank=same; A; B; C; hum}
+  {rank=same; s1; s2; s3; s4}
+  {rank=same; s5; s6; s7; s8}
+}

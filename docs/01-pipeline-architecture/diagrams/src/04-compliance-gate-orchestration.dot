@@ -1,0 +1,18 @@
+digraph gates {
+  rankdir=LR; fontname="Helvetica"; nodesep=0.3; ranksep=0.55; pad=0.3;
+  label="Compliance gate orchestration — 8 blocking gates, every result hash-chained to the immutable audit store"; labelloc=t; fontsize=18;
+  node [shape=box, style="rounded,filled", fontname="Helvetica", fontsize=11, fillcolor="#E8F1FB", color="#2F6DB5"];
+  edge [fontname="Helvetica", fontsize=10];
+  c [label="Commit / PR", fillcolor="#EEEEEE"];
+  g1 [label="G1 SAST\nSonarQube\nRBI 5.1 · PCI 6.2"]; g2 [label="G2 CVE\nTrivy + SBOM\nRBI 5.1/7.2 · PCI 6.3"]; g3 [label="G3 Licence\nScanCode\nRBI 7.2"];
+  g8 [label="G8 Provenance\nCosign + in-toto\nRBI 6.1/7.2"];
+  stg [label="Staging deploy", fillcolor="#EEEEEE"];
+  g4 [label="G4 DAST\nOWASP ZAP\nPCI 6.4 · 11.3"]; g5 [label="G5 K8s policy\nOPA/Kyverno\nRBI 4.2/5.4"]; g6 [label="G6 IaC\nCheckov\nRBI 5.4"];
+  g7 [label="G7 Segregation of duties\nauthor≠approver≠deployer\nRBI 4.3 · PCI 6.5/12.6", fillcolor="#FFE2A8", color="#C77700"];
+  prod [label="Production canary", fillcolor="#D7F0D3", color="#3C8D40"];
+  blk [label="BLOCK\nauto-ticket · remediation hint\nexception workflow (time-boxed, auto-expiry)", fillcolor="#FDE7E7", color="#C62828", style="rounded,filled,dashed"];
+  aud [label="Immutable audit store\nS3 Object Lock 8 y · Loki\nSHA-256 hash chain", shape=cylinder, fillcolor="#FFF8EC", color="#C77700"];
+  c -> g1; c -> g2; c -> g3; g1 -> g8; g2 -> g8; g3 -> g8; g8 -> stg -> g4; g4 -> g5; g4 -> g6; g5 -> g7; g6 -> g7; g7 -> prod;
+  g1 -> blk [style=dashed,color="#C62828"]; g2 -> blk [style=dashed,color="#C62828"]; g4 -> blk [style=dashed,color="#C62828"]; g7 -> blk [style=dashed,color="#C62828"];
+  g8 -> aud [style=dotted]; g7 -> aud [style=dotted]; g4 -> aud [style=dotted];
+}

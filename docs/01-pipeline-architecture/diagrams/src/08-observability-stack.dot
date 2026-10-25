@@ -1,0 +1,14 @@
+digraph obs {
+  rankdir=LR; fontname="Helvetica"; nodesep=0.3; ranksep=0.5; pad=0.3;
+  label="Observability & alerting — detect UPI failures ≤30 s, route by severity, report to RBI"; labelloc=t; fontsize=18;
+  node [shape=box, style="rounded,filled", fontname="Helvetica", fontsize=11, fillcolor="#E8F1FB", color="#2F6DB5"];
+  edge [fontname="Helvetica", fontsize=10];
+  subgraph cluster_src { label="Signals"; style="rounded,dashed"; bgcolor="#F4F8FD"; color="#2F6DB5";
+    app [label="Spring Boot services\nOpenTelemetry SDK"]; mesh [label="Istio metrics\nrequest/latency/codes"]; syn [label="Synthetic probes\nUPI collect/pay every 15 s\nblackbox + k6"]; ci [label="Pipeline events\nGitHub webhooks · audit log"]; }
+  prom [label="Prometheus\nscrape 15 s · rules 15 s"]; loki [label="Loki (logs)"]; otel [label="OTel Collector → Jaeger/Tempo"];
+  am [label="Alertmanager\nroute by severity/category"]; graf [label="Grafana\nEngineering · Management · Regulatory", fillcolor="#E6F4E4", color="#3C8D40"];
+  bot [label="rollback-bot\n(Cat A auto)", fillcolor="#FDE7E7", color="#C62828"]; pd [label="PagerDuty / Slack\nSRE → SRE Lead → VP Eng → CTO/CISO"]; sp [label="Status page auto-update"]; rbi [label="RBI / CERT-In incident\nreport workflow\n(Compliance)", fillcolor="#FFF0D6", color="#C77700"];
+  app -> otel; app -> prom; mesh -> prom; syn -> prom; ci -> prom; app -> loki;
+  prom -> am; prom -> graf; loki -> graf; otel -> graf;
+  am -> bot [label="rollback=auto"]; am -> pd [label="page"]; am -> sp [label="customer impact"]; pd -> rbi [label="SEV-1/2 > 30 min"];
+}

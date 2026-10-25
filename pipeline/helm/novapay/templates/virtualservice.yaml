@@ -1,0 +1,14 @@
+apiVersion: networking.istio.io/v1beta1
+kind: VirtualService
+metadata: { name: payments-api }
+spec:
+  hosts: [ {{ .Values.istio.host | quote }} ]
+  gateways: [ {{ .Values.istio.gateway }} ]
+  http:
+    - name: primary
+      route:
+        - destination: { host: payments-api-stable, port: { number: 8080 } }
+          weight: 100
+        - destination: { host: payments-api-canary, port: { number: 8080 } }
+          weight: 0
+      timeout: 10s

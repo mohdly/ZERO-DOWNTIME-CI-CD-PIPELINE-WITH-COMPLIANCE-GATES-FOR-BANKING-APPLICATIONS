@@ -1,0 +1,12 @@
+digraph env {
+  rankdir=LR; fontname="Helvetica"; nodesep=0.4; ranksep=0.6; pad=0.3;
+  label="Four-environment promotion — same artefact (digest), different config; quality gate at every transition"; labelloc=t; fontsize=18;
+  node [shape=box, style="rounded,filled", fontname="Helvetica", fontsize=11, fillcolor="#E8F1FB", color="#2F6DB5"];
+  edge [fontname="Helvetica", fontsize=10];
+  dev [label="DEV\nsynthetic data · all devs\nauto on PR merge"]; stg [label="STAGING\nanonymised data · dev+QA\nauto if gates pass", fillcolor="#E6F4E4", color="#3C8D40"];
+  pre [label="PRE-PROD\nmasked prod subset\nQA + Compliance + DBA\nTech Lead approval", fillcolor="#FFF0D6", color="#C77700"];
+  prod [label="PRODUCTION\nreal data · SRE + RM only\ndual approval RM + SRE Lead\nblackout check", fillcolor="#FDE7E7", color="#C62828"];
+  dev -> stg [label="units 100% · cov 80/70\nSAST 0C/≤2H · signed"]; stg -> pre [label="integration + Pact · DAST 0C/H\nperf p99<500ms · SBOM · licence"]; pre -> prod [label="UAT sign-off · RBI/PCI gates\nDB migration rehearsal\nCAB/pre-approved · runbook signed"];
+  cfg [label="Config hierarchy\nbase → env override → service override\nVault secrets · feature flags · ArgoCD drift check (3 min)", shape=note, fillcolor="#FFFBD6", color="#999900"];
+  cfg -> stg [style=dotted, arrowhead=none]; cfg -> pre [style=dotted, arrowhead=none];
+}

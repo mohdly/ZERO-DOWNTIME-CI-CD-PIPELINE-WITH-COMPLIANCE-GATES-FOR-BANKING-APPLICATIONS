@@ -1,0 +1,39 @@
+digraph pipeline {
+  rankdir=TB; fontname="Helvetica"; nodesep=0.3; ranksep=0.5; compound=true; pad=0.3;
+  label="NovaPay CI/CD — 10 stages, commit → 100% production ≈ 105 min (critical path)  |  ∥ = runs in parallel  |  red dashed = failure path"; labelloc=t; fontsize=18;
+  node [shape=box, style="rounded,filled", fontname="Helvetica", fontsize=11, fillcolor="#E8F1FB", color="#2F6DB5"];
+  edge [fontname="Helvetica", fontsize=10, color="#444444"];
+
+  subgraph cluster_ci { label="PR / fast-feedback loop  (stages 1-5, ≈15 min worst, ≈9 min cached)"; style="rounded,dashed"; bgcolor="#F4F8FD"; color="#2F6DB5";
+    s1 [label="1 Source & trigger\nGitHub Enterprise · signed commits\nreview ≥1 (2 payments) · gitleaks\nin: commit/PR  out: verified SHA\n⏱ 2 min"];
+    s2 [label="2 Build & unit test\nGradle 8 · JDK 21 · BuildKit · JaCoCo\nline ≥80% / branch ≥70% · lockfiles\nout: jar + SemVer+sha version\n⏱ 8 min"];
+    s3 [label="3 SAST ∥\nSonarQube · banking profile\n0 Crit · ≤2 High · debt ≤5%\n⏱ 6 min"];
+    s4 [label="4 Dependency & container ∥\nTrivy · Syft CycloneDX SBOM · ScanCode\n0 Crit · High CVSS≥8 · no GPL/AGPL\n⏱ 7 min"];
+    s4b [label="4b Sign & attest\nCosign keyless · SBOM + SLSA provenance\nout: signed image@digest\n⏱ 2 min"];
+    s5 [label="5 Integration & contract ∥\nTestcontainers · Pact can-i-deploy\nephemeral ns · migration N-1/N compat\n⏱ 15 min"];
+  }
+  subgraph cluster_stg { label="Staging verification  (stage 6-7)"; style="rounded,dashed"; bgcolor="#F6FBF4"; color="#3C8D40";
+    dstg [label="Deploy staging\nArgoCD sync\n⏱ 5 min", fillcolor="#E6F4E4", color="#3C8D40"];
+    s6a [label="6a DAST ∥\nOWASP ZAP API scan (auth)\n0 Crit/High OWASP Top 10\n⏱ 15 min", fillcolor="#E6F4E4", color="#3C8D40"];
+    s6b [label="6b Perf ∥\nk6 @2× load\np99 <500 ms · err <0.1%\n⏱ 15 min", fillcolor="#E6F4E4", color="#3C8D40"];
+    s7 [label="7 Policy & compliance gates\nOPA/Conftest · Kyverno · Checkov · SoD\nattest 'staging-verified'\n⏱ 3 min", fillcolor="#E6F4E4", color="#3C8D40"];
+  }
+  subgraph cluster_prod { label="Promotion & progressive delivery  (stage 8-9)"; style="rounded,dashed"; bgcolor="#FFF8EC"; color="#C77700";
+    pre [label="Pre-prod deploy + UAT/compliance verify\nmasked prod-scale data · DB migration rehearsal\n⏱ 12 min (approval pre-queued)", fillcolor="#FFF0D6", color="#C77700"];
+    app [label="Dual approval\nRelease Mgr + SRE Lead (SoD)\n⏱ 5 min residual", shape=diamond, fillcolor="#FFE2A8", color="#C77700"];
+    s8 [label="8 Canary: 2% → 10% → 50% → 100%\nArgo Rollouts + Istio · Prometheus analysis\nWelch t · chi² · min 5,000 req\n⏱ 35 min + 5 min", fillcolor="#FFF0D6", color="#C77700"];
+    s9 [label="9 Verify\nfleet digest/config check · smoke\nsynthetic ₹1 payment", fillcolor="#FFF0D6", color="#C77700"];
+    ok [label="Stable (24 h bake,\nauto-rollback armed)", shape=cylinder, fillcolor="#D7F0D3", color="#3C8D40"];
+  }
+  f1 [label="Block + notify author\n(unsigned / <review)", fillcolor="#FDE7E7", color="#C62828", style="rounded,filled,dashed"];
+  f2 [label="Block + auto-ticket\n+ exception workflow", fillcolor="#FDE7E7", color="#C62828", style="rounded,filled,dashed"];
+  f3 [label="AUTO-ROLLBACK < 60 s\n(Istio weight → 0 · abort)", fillcolor="#FDE7E7", color="#C62828", style="rounded,filled,dashed"];
+
+  s1 -> s2; s2 -> s3; s2 -> s4; s2 -> s5; s4 -> s4b;
+  s3 -> dstg; s4b -> dstg; s5 -> dstg;
+  dstg -> s6a; dstg -> s6b; s6a -> s7; s6b -> s7;
+  s7 -> pre; pre -> app; app -> s8; s8 -> s9; s9 -> ok;
+  s1 -> f1 [style=dashed,color="#C62828",label="fail"];
+  s3 -> f2 [style=dashed,color="#C62828"]; s4 -> f2 [style=dashed,color="#C62828"]; s7 -> f2 [style=dashed,color="#C62828"];
+  s8 -> f3 [style=dashed,color="#C62828",label="analysis breach"]; s9 -> f3 [style=dashed,color="#C62828"];
+}

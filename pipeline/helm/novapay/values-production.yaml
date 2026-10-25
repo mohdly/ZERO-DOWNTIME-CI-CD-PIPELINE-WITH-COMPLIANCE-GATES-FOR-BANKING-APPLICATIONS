@@ -1,0 +1,6 @@
+replicaCount: 6
+hpa: { minReplicas: 6, maxReplicas: 60 }
+istio: { host: payments.novapay.example }
+secrets: { vaultPath: secret/data/novapay/prod/payments-api }
+featureFlags: { newEncryptedEmailRead: false }   # features ship dark; ramp 1->10->50->100
+resources: { requests: { cpu: "1", memory: 1Gi }, limits: { cpu: "2", memory: 2Gi } }

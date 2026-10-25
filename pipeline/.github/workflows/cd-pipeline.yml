@@ -1,0 +1,53 @@
+# Stage 8-9: promotion + progressive delivery. GitOps: this workflow only commits the approved digest; ArgoCD/Argo Rollouts do the rollout.
+name: NovaPay CD
+on:
+  workflow_call:
+    inputs:
+      environment: { required: true, type: string }
+      image_digest: { required: true, type: string }
+  workflow_dispatch:
+    inputs:
+      environment: { required: true, type: choice, options: [staging, pre-prod, production] }
+      image_digest: { required: true, type: string }
+      profile: { required: false, type: choice, options: [standard, high-risk, hotfix], default: standard }
+permissions: { contents: read, id-token: write }
+jobs:
+  guard:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+      - name: Blackout / peak-hour check
+        if: inputs.environment == 'production'
+        run: ./pipeline/scripts/blackout-check.sh "${{ inputs.profile || 'standard' }}"
+      - uses: sigstore/cosign-installer@dc72c7d5c4d10cd6bcb8cf6e3fd625a9e5e537da # v3.7.0
+      - name: Verify signature and staging-verified attestation (no bypass, incl. hotfix)
+        run: |
+          REF=registry.novapay.internal/novapay/payments-api@${{ inputs.image_digest }}
+          ID='https://github.com/novapay/.+'; ISS=https://token.actions.githubusercontent.com
+          cosign verify --certificate-identity-regexp "$ID" --certificate-oidc-issuer "$ISS" "$REF"
+          if [ "${{ inputs.environment }}" != "staging" ]; then
+            cosign verify-attestation --type https://novapay.example/attestations/staging-verified/v1 \
+              --certificate-identity-regexp "$ID" --certificate-oidc-issuer "$ISS" "$REF"
+          fi
+  deploy:
+    needs: guard
+    runs-on: ubuntu-24.04
+    environment: ${{ inputs.environment }}     # GitHub Environments: required reviewers (RM + SRE Lead), prevent self-review
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with: { repository: novapay/k8s-manifests, token: "${{ secrets.MANIFEST_REPO_TOKEN }}" }
+      - name: Pin digest in manifests repo (GitOps commit)
+        run: |
+          yq -i '.image.digest = "${{ inputs.image_digest }}"' overlays/${{ inputs.environment }}/values.yaml
+          git config user.name novapay-deploy-bot && git config user.email deploy-bot@novapay.example
+          git commit -am "deploy(${{ inputs.environment }}): ${{ inputs.image_digest }} by ${{ github.actor }}" && git push
+      - name: Wait for Argo Rollout + analysis
+        run: |
+          argocd app wait novapay-${{ inputs.environment }} --health --timeout 3000
+          kubectl argo rollouts status payments-api -n novapay-${{ inputs.environment }} --timeout 2700s
+      - name: Fleet verification (Knight Capital guard) + smoke
+        run: |
+          ./pipeline/scripts/verify-fleet-version.sh novapay-${{ inputs.environment }} payments-api "${{ inputs.image_digest }}"
+          ./pipeline/scripts/smoke-test.sh ${{ inputs.environment }}
+      - name: Emit audit record
+        run: ./pipeline/scripts/emit-audit.sh G7-SOD PASS

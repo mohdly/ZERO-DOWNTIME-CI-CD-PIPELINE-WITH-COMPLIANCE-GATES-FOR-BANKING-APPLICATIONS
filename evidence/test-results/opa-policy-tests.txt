@@ -1,0 +1,18 @@
+pipeline/policies/tests/main_test.rego:
+data.main.test_good_manifest_has_no_denies: PASS (696.128µs)
+data.main.test_latest_tag_denied: PASS (617.854µs)
+data.main.test_privileged_denied: PASS (565.503µs)
+data.main.test_missing_memory_limit_denied: PASS (430.889µs)
+data.main.test_root_user_denied: PASS (472.193µs)
+data.main.test_plaintext_secret_env_denied: PASS (419.695µs)
+data.main.test_gateway_requires_tls13: PASS (260.186µs)
+data.main.test_gateway_tls13_ok: PASS (397.699µs)
+
+pipeline/policies/tests/sod_test.rego:
+data.sod.test_dual_approval_allows: PASS (640.606µs)
+data.sod.test_self_approval_denied: PASS (1.551208ms)
+data.sod.test_single_approver_denied: PASS (1.569842ms)
+data.sod.test_deployer_is_author_denied: PASS (449.845µs)
+data.sod.test_missing_role_denied: PASS (395.323µs)
+--------------------------------------------------------------------------------
+PASS: 13/13

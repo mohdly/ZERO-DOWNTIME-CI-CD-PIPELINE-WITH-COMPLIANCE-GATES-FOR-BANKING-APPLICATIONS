@@ -1,0 +1,37 @@
+apiVersion: argoproj.io/v1alpha1
+kind: AnalysisTemplate
+metadata:
+  name: novapay-canary-analysis
+spec:
+  metrics:
+    - name: error-rate
+      interval: 60s
+      failureLimit: 1
+      successCondition: result[0] < 0.001
+      provider: { prometheus: { address: http://prometheus.monitoring:9090, query: |
+        sum(rate(istio_requests_total{destination_workload=~"payments-api-canary.*",response_code=~"5.."}[1m]))
+        / sum(rate(istio_requests_total{destination_workload=~"payments-api-canary.*"}[1m])) } }
+    - name: p99-latency-ms
+      interval: 60s
+      failureLimit: 1
+      successCondition: result[0] < 200
+      provider: { prometheus: { address: http://prometheus.monitoring:9090, query: |
+        histogram_quantile(0.99, sum by (le)(rate(istio_request_duration_milliseconds_bucket{destination_workload=~"payments-api-canary.*"}[1m]))) } }
+    - name: db-pool-waiting
+      interval: 30s
+      failureLimit: 0
+      successCondition: result[0] < 50
+      provider: { prometheus: { address: http://prometheus.monitoring:9090, query: max(pgbouncer_pools_client_waiting_connections) } }
+    - name: statistical-test
+      interval: 120s
+      failureLimit: 1
+      provider:
+        job:
+          spec:
+            template:
+              spec:
+                restartPolicy: Never
+                containers:
+                  - name: analysis
+                    image: registry.novapay.internal/tools/canary-analysis@sha256:REPLACE_WITH_DIGEST
+                    args: ["--min-samples", "5000", "--alpha", "0.05"]

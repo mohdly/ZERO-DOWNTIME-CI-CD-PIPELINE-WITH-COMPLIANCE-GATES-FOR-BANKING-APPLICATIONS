@@ -1,0 +1,77 @@
+# promtool unit tests for rollback-alerts.yaml  ->  promtool test rules rollback-alerts.test.yaml
+rule_files:
+  - rollback-alerts.yaml
+evaluation_interval: 15s
+tests:
+  # --- A1: canary 5xx > 5% for 30s must fire (simulates Section B5: 12% HTTP 500) ---------------
+  - name: A1 canary 5xx at ~12% fires CanaryHigh5xx
+    interval: 15s
+    input_series:
+      - series: 'istio_requests_total{destination_workload="payments-api-canary",response_code="200"}'
+        values: '0+88x20'          # 88 req / 15 s ok
+      - series: 'istio_requests_total{destination_workload="payments-api-canary",response_code="500"}'
+        values: '0+12x20'          # 12 req / 15 s errors = 12 %
+    alert_rule_test:
+      - eval_time: 30s
+        alertname: CanaryHigh5xx
+        exp_alerts: []             # still inside the 30 s 'for' window
+      - eval_time: 90s
+        alertname: CanaryHigh5xx
+        exp_alerts:
+          - exp_labels: { severity: critical, rollback: auto, category: A }
+            exp_annotations:
+              summary: "Canary 5xx > 5% for 30s — auto-rollback"
+              runbook: "runbooks/incident-playbook.md#rollback"
+
+  - name: A1 healthy canary (0.5% errors) does NOT fire
+    interval: 15s
+    input_series:
+      - series: 'istio_requests_total{destination_workload="payments-api-canary",response_code="200"}'
+        values: '0+199x20'
+      - series: 'istio_requests_total{destination_workload="payments-api-canary",response_code="500"}'
+        values: '0+1x20'
+    alert_rule_test:
+      - eval_time: 5m
+        alertname: CanaryHigh5xx
+        exp_alerts: []
+
+  # --- A4: DB connection pool exhaustion (Section B5 alert 2) ------------------------------------
+  - name: A5 PgBouncer waiting clients > 50 fires after 20s
+    interval: 15s
+    input_series:
+      - series: 'pgbouncer_pools_client_waiting_connections{database="novapay"}'
+        values: '5 5 80x20'
+    alert_rule_test:
+      - eval_time: 3m
+        alertname: DBConnectionPoolExhausted
+        exp_alerts:
+          - exp_labels: { severity: critical, rollback: auto, category: A }
+            exp_annotations: { summary: "PgBouncer clients waiting > 50 — pool exhaustion" }
+
+  # --- A7: payment-gateway timeouts 35 % (Section B5 alert 3) ------------------------------------
+  - name: A7 gateway timeout ratio 35% fires
+    interval: 15s
+    input_series:
+      - series: 'gateway_requests_total{outcome="timeout"}'
+        values: '0+35x20'
+      - series: 'gateway_requests_total{outcome="ok"}'
+        values: '0+65x20'
+    alert_rule_test:
+      - eval_time: 2m
+        alertname: PaymentGatewayTimeouts
+        exp_alerts:
+          - exp_labels: { severity: critical, rollback: auto, category: A }
+            exp_annotations: { summary: "Payment gateway timeouts > 20%" }
+
+  # --- A3/A4: CrashLoopBackOff on a prod pod -------------------------------------------------------
+  - name: A4 CrashLoopBackOff fires immediately
+    interval: 15s
+    input_series:
+      - series: 'kube_pod_container_status_waiting_reason{reason="CrashLoopBackOff",namespace="novapay-prod",pod="payments-api-7d9f-x1"}'
+        values: '1x10'
+    alert_rule_test:
+      - eval_time: 30s
+        alertname: NewVersionCrashLoop
+        exp_alerts:
+          - exp_labels: { severity: critical, rollback: auto, category: A, reason: CrashLoopBackOff, namespace: novapay-prod, pod: payments-api-7d9f-x1 }
+            exp_annotations: { summary: "CrashLoopBackOff in payments-api-7d9f-x1" }

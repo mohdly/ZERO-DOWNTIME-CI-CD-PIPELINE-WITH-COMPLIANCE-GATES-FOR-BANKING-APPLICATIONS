@@ -1,0 +1,13 @@
+{
+  "healthy": {
+    "anomaly_ratio": 0.0,
+    "windows": 30,
+    "decision": "promote"
+  },
+  "slow_burn(p99 x1.35, cpu x1.3, pool x4; each below hard thresholds)": {
+    "anomaly_ratio": 1.0,
+    "windows": 30,
+    "decision": "rollback-advised"
+  }
+}
+{'recall_in_top_20pct': 0.675, 'failures_in_test_set': 40, 'tests': 1000}

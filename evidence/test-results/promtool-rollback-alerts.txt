@@ -1,0 +1,5 @@
+Checking rollback-alerts.yaml
+  SUCCESS: 9 rules found
+
+  SUCCESS
+

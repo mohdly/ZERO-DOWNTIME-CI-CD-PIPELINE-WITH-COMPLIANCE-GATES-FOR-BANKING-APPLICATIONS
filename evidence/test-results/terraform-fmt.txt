@@ -1,0 +1,1 @@
+exit=0 (OpenTofu 1.8.5 fmt; terraform init/validate not run — provider registry unreachable in this sandbox)

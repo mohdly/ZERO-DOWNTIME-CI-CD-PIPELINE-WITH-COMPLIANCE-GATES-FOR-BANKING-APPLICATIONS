@@ -1,0 +1,5 @@
+Checking observability-rules.yaml
+  SUCCESS: 11 rules found
+
+  SUCCESS
+

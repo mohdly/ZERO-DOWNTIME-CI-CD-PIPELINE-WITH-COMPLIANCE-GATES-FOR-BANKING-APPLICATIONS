@@ -1,0 +1,32 @@
+apiVersion: kyverno.io/v1
+kind: ClusterPolicy
+metadata: { name: verify-signed-images, annotations: { policies.kyverno.io/title: "Only signed, staging-verified images", compliance/controls: "RBI-6.1,RBI-7.2,PCI-6.3" } }
+spec:
+  validationFailureAction: Enforce
+  background: false
+  webhookTimeoutSeconds: 15
+  rules:
+    - name: verify-cosign-signature-and-attestation
+      match: { any: [ { resources: { kinds: [Pod], namespaces: ["novapay-prod*", "novapay-pre-prod"] } } ] }
+      verifyImages:
+        - imageReferences: ["registry.novapay.internal/novapay/*"]
+          mutateDigest: true
+          required: true
+          attestors:
+            - entries:
+                - keyless:
+                    issuer: https://token.actions.githubusercontent.com
+                    subjectRegExp: "^https://github.com/novapay/.+"
+          attestations:
+            - type: https://cyclonedx.org/bom
+              conditions: []
+            - type: https://novapay.example/attestations/staging-verified/v1
+              conditions:
+                - all:
+                    - { key: "{{ dast }}", operator: Equals, value: "pass" }
+                    - { key: "{{ perf }}", operator: Equals, value: "pass" }
+    - name: disallow-latest
+      match: { any: [ { resources: { kinds: [Pod] } } ] }
+      validate:
+        message: "Images must be pinned by digest/SemVer, never :latest"
+        pattern: { spec: { containers: [ { image: "!*:latest" } ] } }

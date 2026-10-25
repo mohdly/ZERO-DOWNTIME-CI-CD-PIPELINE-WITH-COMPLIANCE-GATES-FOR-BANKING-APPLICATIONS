@@ -1,0 +1,52 @@
+groups:
+  - name: novapay-rollback-category-a
+    interval: 15s
+    rules:
+      - alert: CanaryHigh5xx
+        expr: |
+          sum(rate(istio_requests_total{destination_workload=~".+-canary",response_code=~"5.."}[30s]))
+          / sum(rate(istio_requests_total{destination_workload=~".+-canary"}[30s])) > 0.05
+        for: 30s
+        labels: { severity: critical, rollback: auto, category: A }
+        annotations: { summary: "Canary 5xx > 5% for 30s — auto-rollback", runbook: "runbooks/incident-playbook.md#rollback" }
+      - alert: NewVersionCrashLoop
+        expr: kube_pod_container_status_waiting_reason{reason="CrashLoopBackOff",namespace=~"novapay-prod.*"} == 1
+        for: 0m
+        labels: { severity: critical, rollback: auto, category: A }
+        annotations: { summary: "CrashLoopBackOff in {{ $labels.pod }}" }
+      - alert: NewVersionOOMKilled
+        expr: increase(kube_pod_container_status_restarts_total{namespace=~"novapay-prod.*"}[5m]) > 0
+              and on(namespace,pod,container) kube_pod_container_status_last_terminated_reason{reason="OOMKilled"} == 1
+        for: 0m
+        labels: { severity: critical, rollback: auto, category: A }
+        annotations: { summary: "OOMKilled in {{ $labels.pod }}" }
+      - alert: DBConnectionPoolExhausted
+        expr: max(pgbouncer_pools_client_waiting_connections{database="novapay"}) > 50
+        for: 20s
+        labels: { severity: critical, rollback: auto, category: A }
+        annotations: { summary: "PgBouncer clients waiting > 50 — pool exhaustion" }
+      - alert: PaymentGatewayTimeouts
+        expr: sum(rate(gateway_requests_total{outcome="timeout"}[30s])) / sum(rate(gateway_requests_total[30s])) > 0.20
+        for: 30s
+        labels: { severity: critical, rollback: auto, category: A }
+        annotations: { summary: "Payment gateway timeouts > 20%" }
+  - name: novapay-rollback-category-b
+    rules:
+      - alert: LatencyP99DoubleBaseline
+        expr: histogram_quantile(0.99, sum by (le) (rate(istio_request_duration_milliseconds_bucket{destination_workload=~"payments.*"}[5m])))
+              > 2 * on() avg_over_time(novapay:p99_baseline_ms[7d])
+        for: 5m
+        labels: { severity: critical, rollback: escalate, category: B, auto_rollback_after: 15m }
+      - alert: ErrorBudgetBurnFast
+        expr: (novapay:error_ratio:rate1h > (10 * 0.001)) and (novapay:error_ratio:rate5m > (10 * 0.001))
+        for: 10m
+        labels: { severity: critical, rollback: escalate, category: B, auto_rollback_after: 15m }
+      - alert: TransactionSuccessDrop
+        expr: (novapay:txn_success_ratio:rate5m < (novapay:txn_success_ratio:baseline - 0.02))
+        for: 5m
+        labels: { severity: critical, rollback: escalate, category: B }
+      - alert: ResourceSaturation
+        expr: (avg(rate(container_cpu_usage_seconds_total{namespace=~"novapay-prod.*"}[5m]) / on(pod) kube_pod_container_resource_limits{resource="cpu"}) > 0.9)
+              or (avg(container_memory_working_set_bytes{namespace=~"novapay-prod.*"} / on(pod) kube_pod_container_resource_limits{resource="memory"}) > 0.85)
+        for: 5m
+        labels: { severity: warning, rollback: escalate, category: B }

@@ -1,0 +1,14 @@
+== yamllint (workflows, k8s, rules)  PASS
+== JSON (dashboards)                 PASS
+== Dashboards regenerate identically PASS
+== shellcheck (scripts)              PASS
+== opa check (Rego v1)               PASS
+== opa test (policy unit tests)      PASS
+== promtool check rules              PASS
+== promtool test rules (alerts)      PASS
+== pytest (canary, ML, fleet guard)  PASS
+== terraform/tofu fmt -check         PASS
+== helm lint                         SKIP (helm not installed)
+== conftest (rendered chart vs policies)SKIP (helm not installed)
+
+SUMMARY: 10 passed, 0 failed, 2 skipped

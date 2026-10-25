@@ -1,0 +1,61 @@
+rule_files: [observability-rules.yaml]
+evaluation_interval: 15s
+tests:
+  - name: UPI TD% 6% is detected within 30 s of failure start
+    interval: 15s
+    input_series:
+      - series: 'upi_txn_total{outcome="ok"}'
+        values: '0+470x40'
+      - series: 'upi_txn_total{outcome="technical_decline"}'
+        values: '0 0 0 0 0+30x35'        # failures begin at t=60 s (~6 %)
+    alert_rule_test:
+      - eval_time: 45s
+        alertname: UPITechnicalDeclineRateHigh
+        exp_alerts: []
+      - eval_time: 90s                    # <= 30 s after t=60 s onset
+        alertname: UPITechnicalDeclineRateHigh
+        exp_alerts:
+          - exp_labels: { severity: critical, regulatory: "true", sev: SEV-1 }
+            exp_annotations: { summary: "UPI technical-decline rate above 2%", action: "Page SRE; status page 'Investigating UPI failures'; start RBI/CERT-In incident clock" }
+  - name: UPI synthetic probes failing twice pages
+    interval: 15s
+    input_series:
+      - series: 'probe_success{job="upi-synthetic",instance="mumbai"}'
+        values: '1 1 0x20'
+      - series: 'probe_success{job="upi-synthetic",instance="chennai"}'
+        values: '1 1 0x20'
+      - series: 'probe_success{job="upi-synthetic",instance="delhi"}'
+        values: '1x22'
+    alert_rule_test:
+      - eval_time: 2m
+        alertname: UPISyntheticProbeFailing
+        exp_alerts:
+          - exp_labels: { severity: critical, regulatory: "true", sev: SEV-1 }
+            exp_annotations: { summary: "2+ synthetic UPI collect/pay probes failing" }
+  - name: Incident open >30 min raises regulatory task
+    interval: 30s
+    input_series:
+      - series: 'novapay_incident_started_timestamp_seconds{customer_impact="true",incident="INC-1"}'
+        values: '0x100'
+      - series: 'novapay_incident_resolved{customer_impact="true",incident="INC-1"}'
+        values: '0x100'
+    alert_rule_test:
+      - eval_time: 29m
+        alertname: CustomerImpactingIncidentOver30m
+        exp_alerts: []
+      - eval_time: 31m
+        alertname: CustomerImpactingIncidentOver30m
+        exp_alerts:
+          - exp_labels: { severity: critical, regulatory: "true", customer_impact: "true", incident: INC-1 }
+            exp_annotations: { summary: "Customer-impacting incident open >30 min — open Compliance task with prefilled RBI/NPCI/CERT-In template" }
+  - name: Broken audit chain alerts
+    interval: 1m
+    input_series:
+      - series: 'novapay_audit_chain_valid{store="s3-objectlock"}'
+        values: '1 1 0 0'
+    alert_rule_test:
+      - eval_time: 3m
+        alertname: AuditHashChainBroken
+        exp_alerts:
+          - exp_labels: { severity: critical, regulatory: "true" }
+            exp_annotations: { summary: "Audit-log hash chain verification failed (RBI 6.1 / PCI 10.2)" }

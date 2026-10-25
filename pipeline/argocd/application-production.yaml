@@ -1,0 +1,23 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata: { name: novapay-production, namespace: argocd }
+spec:
+  project: novapay
+  source:
+    repoURL: https://github.com/novapay/k8s-manifests
+    targetRevision: release/prod      # pinned branch/tag written by the approved deploy job — NOT HEAD
+    path: overlays/production
+  destination: { server: https://kubernetes.default.svc, namespace: novapay-prod }
+  syncPolicy:
+    # Prod: manual/approved sync; drift is alerted (every 3 min) not auto-corrected, preserving change control.
+    syncOptions: [ CreateNamespace=false, ServerSideApply=true ]
+    retry: { limit: 2, backoff: { duration: 30s, factor: 2, maxDuration: 3m } }
+---
+apiVersion: argoproj.io/v1alpha1
+kind: Application
+metadata: { name: novapay-staging, namespace: argocd }
+spec:
+  project: novapay
+  source: { repoURL: https://github.com/novapay/k8s-manifests, targetRevision: main, path: overlays/staging }
+  destination: { server: https://kubernetes.default.svc, namespace: novapay-staging }
+  syncPolicy: { automated: { prune: true, selfHeal: true } }

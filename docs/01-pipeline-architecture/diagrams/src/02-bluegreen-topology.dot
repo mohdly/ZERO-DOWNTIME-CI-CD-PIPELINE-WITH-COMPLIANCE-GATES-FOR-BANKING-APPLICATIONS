@@ -1,0 +1,19 @@
+digraph bg {
+  rankdir=TB; fontname="Helvetica"; nodesep=0.5; ranksep=0.6; pad=0.3;
+  label="Blue-green topology — Istio VirtualService atomic switch, shared data namespace"; labelloc=t; fontsize=18;
+  node [shape=box, style="rounded,filled", fontname="Helvetica", fontsize=11, fillcolor="#FFFFFF", color="#444444"];
+  edge [fontname="Helvetica", fontsize=10];
+  users [label="Customers / UPI / mobile app", shape=ellipse, fillcolor="#EEEEEE"];
+  gw [label="Istio IngressGateway\nTLS 1.3 · WAF rules via config pipeline", fillcolor="#E8F1FB", color="#2F6DB5"];
+  vs [label="VirtualService payments-api\nweights blue/green = 0/100\n(single Git commit → atomic switch)", fillcolor="#FFE2A8", color="#C77700"];
+  subgraph cluster_blue { label="novapay-prod-blue  (v1.13.9 — draining, warm 60 min)"; style="rounded,dashed"; bgcolor="#EAF2FF"; color="#2F6DB5";
+    bapi [label="payments-api ×3\nterminationGracePeriod 330 s\npreStop /drain"]; bwrk [label="settlement workers\nconsumers paused after switch"]; }
+  subgraph cluster_green { label="novapay-prod-green  (v1.14.2 — live)"; style="rounded,dashed"; bgcolor="#EAF8EA"; color="#3C8D40";
+    gapi [label="payments-api ×3\nreadiness gated"]; gwrk [label="settlement workers\nconsumers enabled post-switch"]; }
+  subgraph cluster_shared { label="novapay-shared  (backward-compatible schema only — expand/contract)"; style="rounded,dashed"; bgcolor="#F7F7F7"; color="#777777";
+    pgb [label="PgBouncer\n60% pool budget per colour"]; pg [label="PostgreSQL 16\nprimary + replicas", shape=cylinder, fillcolor="#FFF8EC"]; rd [label="Redis 7 cluster (3)\nshared sessions", shape=cylinder, fillcolor="#FFF8EC"]; mq [label="RabbitMQ 3.13\nidempotent consumers", shape=cylinder, fillcolor="#FFF8EC"]; }
+  users -> gw -> vs;
+  vs -> bapi [label="0%  (new conns stop)", style=dashed, color="#2F6DB5"];
+  vs -> gapi [label="100%", color="#3C8D40", penwidth=2];
+  bapi -> pgb; gapi -> pgb; pgb -> pg; bapi -> rd; gapi -> rd; bwrk -> mq; gwrk -> mq; bapi -> bwrk [style=invis]; gapi -> gwrk [style=invis];
+}

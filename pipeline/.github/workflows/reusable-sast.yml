@@ -1,0 +1,29 @@
+name: Reusable SAST Scan
+on:
+  workflow_call:
+    inputs:
+      sonar_project_key: { required: true, type: string }
+      min_coverage:      { required: false, type: number, default: 80 }
+    secrets:
+      SONAR_TOKEN: { required: true }
+jobs:
+  sast:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with: { fetch-depth: 0 }
+      - uses: actions/setup-java@cf277c60eb25467037889841efdb72551f06f6c3 # v4
+        with: { distribution: temurin, java-version: "21" }
+      - name: SonarQube scan
+        uses: SonarSource/sonarqube-scan-action@689fb39b34b9aa95ebc5f8f119343ddd51542402 # v4
+        env: { SONAR_TOKEN: "${{ secrets.SONAR_TOKEN }}", SONAR_HOST_URL: "${{ vars.SONAR_HOST_URL }}" }
+        with: { args: "-Dsonar.projectKey=${{ inputs.sonar_project_key }}" }
+      - name: Quality gate (0 Critical, <=2 High, debt<=5%)
+        uses: SonarSource/sonarqube-quality-gate-action@7a5fffe8e523c40e0c740b6bc2712ab503e52efa # v1
+        timeout-minutes: 5
+        env: { SONAR_TOKEN: "${{ secrets.SONAR_TOKEN }}" }
+      - name: Verify coverage from Sonar API
+        env: { SONAR_TOKEN: "${{ secrets.SONAR_TOKEN }}", MIN: "${{ inputs.min_coverage }}" }
+        run: |
+          coverage=$(curl -s -u "$SONAR_TOKEN:" "${{ vars.SONAR_HOST_URL }}/api/measures/component?component=${{ inputs.sonar_project_key }}&metricKeys=coverage" | jq -r '.component.measures[0].value')
+          awk -v c="$coverage" -v m="$MIN" 'BEGIN{ if (c+0 < m+0) { printf "Coverage %s%% below minimum %s%%\n", c, m; exit 1 } }'

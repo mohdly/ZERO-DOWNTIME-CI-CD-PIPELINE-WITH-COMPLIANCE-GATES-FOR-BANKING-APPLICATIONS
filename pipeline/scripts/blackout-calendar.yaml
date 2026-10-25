@@ -1,0 +1,10 @@
+timezone: Asia/Kolkata
+recurring:
+  salary_days:   { days_of_month: [1, 7, 15], from: "06:00", to: "23:59", mode: block }
+  month_end:     { days_of_month: [28, 29, 30, 31], mode: block_non_critical }
+  daily_peak:    { windows: ["10:00-12:00", "17:00-20:00"], mode: block_standard }
+  friday_late:   { weekday: 5, from: "15:00", mode: block_contract_and_highrisk }
+fixed:   # maintained annually by Compliance/SRE — placeholders, update each year
+  - { name: "Diwali freeze", from: "2026-11-05", to: "2026-11-11", mode: block }
+  - { name: "Christmas freeze", from: "2026-12-24", to: "2026-12-26", mode: block }
+  - { name: "Quarter-end filing", from: "2026-12-28", to: "2027-01-02", mode: block }

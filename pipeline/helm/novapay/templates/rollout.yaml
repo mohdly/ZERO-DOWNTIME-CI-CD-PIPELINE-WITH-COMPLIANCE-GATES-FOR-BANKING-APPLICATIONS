@@ -1,0 +1,38 @@
+apiVersion: argoproj.io/v1alpha1
+kind: Rollout
+metadata:
+  name: payments-api
+spec:
+  replicas: {{ .Values.replicaCount }}
+  revisionHistoryLimit: 3
+  selector: { matchLabels: { app: payments-api } }
+  template:
+    metadata:
+      labels: { app: payments-api }
+    spec:
+      terminationGracePeriodSeconds: {{ .Values.terminationGracePeriodSeconds }}
+      securityContext: { runAsNonRoot: true }
+      containers:
+        - name: payments-api
+          image: "{{ .Values.image.repository }}@{{ required "image.digest is required (no tags/latest)" .Values.image.digest }}"
+          ports: [ { containerPort: 8080 } ]
+          securityContext: {{- toYaml .Values.securityContext | nindent 12 }}
+          resources: {{- toYaml .Values.resources | nindent 12 }}
+          readinessProbe: { httpGet: { path: /actuator/health/readiness, port: 8080 }, periodSeconds: 5, failureThreshold: 3 }
+          livenessProbe:  { httpGet: { path: /actuator/health/liveness,  port: 8080 }, periodSeconds: 10, failureThreshold: 3 }
+          startupProbe:   { httpGet: { path: /actuator/health/liveness,  port: 8080 }, periodSeconds: 5, failureThreshold: 30 }
+          lifecycle: { preStop: { exec: { command: ["sh", "-c", "sleep 15"] } } }
+  strategy:
+    canary:
+      stableService: payments-api-stable
+      canaryService: payments-api-canary
+      trafficRouting:
+        istio: { virtualService: { name: payments-api, routes: [primary] } }
+      analysis:
+        templates: [ { templateName: novapay-canary-analysis } ]
+        startingStep: 1
+      steps:
+        {{- range .Values.canary.steps }}
+        - setWeight: {{ .weight }}
+        - pause: { duration: {{ .pause }} }
+        {{- end }}
